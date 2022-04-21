@@ -46,7 +46,7 @@
             <br />
             请在使用前先阅读说明文档：
             <br />
-            <el-link @click.native="$open('http://sedna.virts.app/')" type="primary" :underline="false">http://sedna.virts.app/</el-link>
+            <el-link @click.native="$open('http://sedna.virts.app')" type="primary" :underline="false">http://sedna.virts.app</el-link>
             <br />
             如有疑问可以联系邮箱：
             <br />
