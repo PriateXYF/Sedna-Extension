@@ -98,8 +98,10 @@
               </el-row>
             </el-form-item>
             <el-form-item>
-              <el-button type="success" @click="saveOnlineForm">Save from Online</el-button>
-              <el-button type="primary" @click="saveForm">Save</el-button>
+              <el-button type="success" @click="saveOnlineForm"
+                >Save from Online</el-button
+              >
+              <el-button type="primary" @click="uploadConfig">Save</el-button>
             </el-form-item>
           </el-form>
           <div class="bottom clearfix"></div>
@@ -118,38 +120,76 @@
       <el-card class="indexcontainer card add-note-card" shadow="hover">
         <div class="operation-buttons">
           <el-row>
-            <el-col :span="8"
-              ><el-button type="primary" plain style="width: 100%" @click="uploadConfig"
-                >Upload</el-button
-              >
-            </el-col>
-            <el-col :span="8"
-              ><el-button type="warning" plain style="width: 100%" @click="isSave = !isSave"
+            <el-col :span="12"
+              ><el-button
+                type="warning"
+                plain
+                style="width: 100%"
+                @click="isSave = !isSave"
                 >Modify</el-button
               ></el-col
             >
             <!-- <el-col :span="8"><el-button style="width: 100%" @click="copyConfig">Copy</el-button></el-col> -->
-            <el-col :span="8"
-              ><el-button type="success" plain style="width: 100%" @click="checkinOnline"
+            <el-col :span="12"
+              ><el-button
+                type="success"
+                plain
+                style="width: 100%"
+                @click="checkinOnline"
                 >Checkin</el-button
               ></el-col
             >
           </el-row>
           <el-row>
-            <el-col :span="8"
-              ><el-button type="danger" plain style="width: 100%" @click="deleteConfig"
+            <el-col :span="12"
+              ><el-button
+                type="danger"
+                plain
+                style="width: 100%"
+                @click="deleteConfig"
                 >Delete</el-button
               >
             </el-col>
-            <el-col :span="8"
-              ><el-button type="info" plain style="width: 100%">Info</el-button></el-col
-            >
-            <el-col :span="8"
-              ><el-button plain style="width: 100%">Log</el-button></el-col
+            <el-col :span="12"
+              ><el-button
+                type="info"
+                plain
+                style="width: 100%"
+                @click="showInfo"
+                >Info</el-button
+              ></el-col
             >
           </el-row>
         </div>
       </el-card>
+      <div v-show="isShowInfo">
+        <el-alert
+          @click.native="
+            copyToClipboard(
+              JSON.stringify({
+                id: cloudConfig.id,
+              })
+            )
+          "
+          :title="cloudConfig ? `id : ${cloudConfig.id}` : 'id undefined'"
+          center
+          :style="{ cursor: 'pointer' }"
+          :closable="false"
+        >
+        </el-alert>
+        <el-alert
+          v-for="log in logs"
+          :key="log.id"
+          :title="`${dayjs(log.get('createdAt')).format(
+            'YY-MM-DD HH:mm'
+          )} - ${log.get('status')}`"
+          :type="formatLogStatus(log.get('status'))"
+          center
+          show-icon
+          :closable="false"
+        >
+        </el-alert>
+      </div>
     </el-col>
   </div>
 </template>
@@ -157,13 +197,13 @@
 .add-card {
   margin-top: 32px;
 }
-.card{
+.card {
   /* background-color: rgb(255, 230, 226) !important; */
   /* border: 2px solid black !important; */
   border-width: 2px !important;
 }
 
-.operation-buttons button{
+.operation-buttons button {
   margin: 4px;
 }
 </style>
@@ -172,12 +212,15 @@
 import _ from "lodash";
 import axios from "axios";
 import AV from "leancloud-storage";
+import dayjs from "dayjs";
 export default {
   props: ["host"],
   data() {
     return {
+      dayjs: dayjs,
       isSave: false,
       isLoading: false,
+      isShowInfo: false,
       form: {
         name: "",
         url: "",
@@ -193,6 +236,7 @@ export default {
       },
       config: null,
       cloudConfig: null,
+      logs: [],
     };
   },
   components: {},
@@ -228,24 +272,6 @@ export default {
           value: "",
         });
     },
-    saveForm() {
-      const _this = this;
-      this.form.headers = this.form.headers.filter(
-        (header) => header.key || header.value
-      );
-      this.form.bodies = this.form.bodies.filter(
-        (body) => body.key || body.value
-      );
-      chrome.storage.sync.get({ data: {} }, function (items) {
-        var data = items.data;
-        data[_this.host] = _this.form;
-        data[_this.host]["host"] = _this.host;
-        chrome.storage.sync.set({ data }, function () {
-          _this.$message.success("Save Success!");
-          _this.isSave = true;
-        });
-      });
-    },
     saveOnlineForm() {
       this.isLoading = true;
       const _this = this;
@@ -263,6 +289,7 @@ export default {
           _this.isLoading = false;
         });
     },
+    // 生成配置文件
     async generateConfig() {
       this.config = _.cloneDeep(this.form);
       this.config.headers = {};
@@ -294,19 +321,20 @@ export default {
     },
     copyToClipboard(text) {
       if (text === undefined) return;
+      const tempScrollTop = document.scrollingElement.scrollTop
       var copyDiv = document.createElement("textarea");
-      copyDiv.style.height = "0.5px";
       document.body.appendChild(copyDiv, document.body.firstChild);
       copyDiv.innerText = text;
       copyDiv.focus();
       copyDiv.select();
       document.execCommand("copy");
       document.body.removeChild(copyDiv);
+      document.scrollingElement.scrollTop = tempScrollTop
+      this.$message.success("Copy Success!");
     },
     async copyConfig() {
       if (!this.config) await this.generateConfig();
       this.copyToClipboard(JSON.stringify(this.config));
-      this.$message.success("Copy Success!");
     },
     async uploadConfig() {
       const _this = this;
@@ -314,12 +342,14 @@ export default {
       if (!this.config) await this.generateConfig();
       if (this.cloudConfig) {
         this.cloudConfig.set("config", _this.config);
+        this.cloudConfig.set("rawConfig", _this.form);
         this.cloudConfig
           .save()
           .then(
             (config) => {
               _this.cloudConfig = config;
               _this.$message.success("Upload Success!");
+              _this.isSave = !_this.isSave;
             },
             (error) => {
               console.log(error);
@@ -334,6 +364,7 @@ export default {
         const config = new Config();
         config.set("config", _this.config);
         config.set("host", _this.host);
+        config.set("rawConfig", _this.form);
         config
           .save()
           .then(
@@ -447,18 +478,52 @@ export default {
         }
       });
     },
+    // 显示基本信息 日志+id
+    showInfo() {
+      this.isLoading = true;
+      const _this = this;
+      const query = new AV.Query("Log");
+      query
+        .equalTo("config", this.cloudConfig)
+        .descending("createdAt")
+        .limit(10)
+        .find()
+        .then((logs) => {
+          console.log(logs);
+          _this.logs = logs;
+          // _this.form = config.get("rawConfig") || _this.form;
+          // _this.isSave = true;
+        })
+        .catch((error) => {
+          // _this.$message.error("Sync Cloud Config Error!");
+          console.log(error);
+        })
+        .finally(() => {
+          _this.isLoading = false;
+          _this.isShowInfo = true;
+        });
+    },
+    formatLogStatus(status) {
+      const statusMap = {
+        error: "error",
+        success: "success",
+        repete: "warning",
+        failure: "error",
+      };
+      return statusMap[status];
+    },
   },
   async created() {
     const _this = this;
     this.isLoading = true;
     // 同步表单数据
-    chrome.storage.sync.get({ data: {} }, function (items) {
-      var data = items.data;
-      if (Object.hasOwnProperty.call(data, _this.host)) {
-        _this.form = data[_this.host];
-        _this.isSave = true;
-      }
-    });
+    // chrome.storage.sync.get({ data: {} }, function (items) {
+    //   var data = items.data;
+    //   if (Object.hasOwnProperty.call(data, _this.host)) {
+    //     _this.form = data[_this.host];
+    //     _this.isSave = true;
+    //   }
+    // });
     // 同步云端数据
     const query = new AV.Query("Config");
     query.equalTo("host", this.host);
@@ -466,8 +531,12 @@ export default {
       .first()
       .then((config) => {
         _this.cloudConfig = config;
+        _this.form = config.get("rawConfig") || _this.form;
+        _this.isSave = true;
+        _this.showInfo()
       })
       .catch((error) => {
+        _this.$message.error("Sync Cloud Config Error!");
         console.log(error);
       })
       .finally(() => {

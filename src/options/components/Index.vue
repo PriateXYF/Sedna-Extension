@@ -4,26 +4,23 @@
       <el-tab-pane label="数据管理">
         <el-card class="box-card">
           <div class="text item">
-            <el-link @click="$to('import')">导入数据</el-link>
+            <el-link @click="$to('sync')">云同步</el-link>
           </div>
           <div class="text item">
-            <el-link @click="$to('export')">导出数据</el-link>
-          </div>
-          <div class="text item">
-            <el-link @click="$to('data')">全部数据</el-link>
+            <el-link @click="$to('data')">配置管理</el-link>
           </div>
           <div class="text item">
             <el-link @click="$to('system')">系统变量</el-link>
           </div>
           <div class="text item">
-            <el-link @click="$to('destroy')" type="danger">重置数据</el-link>
+            <el-link @click="$to('destroy')" type="danger">恢复出厂</el-link>
           </div>
         </el-card>
       </el-tab-pane>
       <el-tab-pane label="偏好管理">
         <el-card class="box-card">
           <div class="text item">
-            <el-link @click="$to('like')">我的收藏</el-link>
+            <el-link @click="$to('like')">在线模板地址</el-link>
           </div>
           <div class="text item">
             <el-link @click="$to('leancloud')">leancloud绑定</el-link>

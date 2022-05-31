@@ -2,7 +2,7 @@
 
 基于 Leancloud 的自动化签到工具。
 
-* Sedna
+* [Sedna](https://github.com/PriateXYF/Sedna)
 * [说明文档](https://sedna.virts.app/)
 
 ## 安装方式
